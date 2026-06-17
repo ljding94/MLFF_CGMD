@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.ipynb_checkpoints/
+
+# LAMMPS / simulation output
+log.lammps
+log.*.lammps
+*.restart
+dump.*.txt
+coord/
+final_state.data
+final_polymer.data
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
