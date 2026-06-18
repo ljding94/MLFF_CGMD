@@ -7,6 +7,9 @@ venv/
 env/
 .ipynb_checkpoints/
 
+# Simulation data (lives on Hugging Face, not in git)
+data/
+
 # LAMMPS / simulation output
 log.lammps
 log.*.lammps

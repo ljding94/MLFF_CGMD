@@ -1,12 +1,13 @@
 # Standard LAMMPS script for polymer simulations
-variable pdump equal 1000
+variable pdump equal 100
 variable pequi equal 10000
+variable prun equal 100000
 variable random equal 42
 variable time_step equal 0.01
 
 #variable eps equal 0.1
 
-shell mkdir ${dump_path}
+# ${dump_path} is created by the Python driver before launch
 log ${dump_path}/log.lammps
 
 
@@ -28,8 +29,8 @@ velocity all create 1.0 ${random} dist gaussian mom yes rot yes
 
 
 #Specify of Potential Energy Coefficients
-#cosine angle
-angle_coeff * 0.0
+#cosine angle: E = kappa * (1 + cos(theta)), kappa = bending stiffness
+angle_coeff * ${kappa}
 #Bond (fene)
 bond_coeff 1 30.0 1.5 1.0 1.0
 
@@ -38,15 +39,10 @@ bond_coeff 1 30.0 1.5 1.0 1.0
 #pair_coeff  * * ${eps} 1.0 2.5
 #special_bonds fene
 
-# VdW potential (LJ with configurable epsilons)
-# Assuming atom types: 1=polymer backbone, 2=side chains, 3=solvent
+# VdW potential (LJ with configurable epsilon)
+# Single chain, no solvent. Atom type: 1=polymer
 pair_modify   shift yes
-pair_coeff 1 1 ${eps_pp} 1.0 2.5  # Polymer-polymer (backbone-backbone)
-pair_coeff 2 2 ${eps_pp} 1.0 2.5  # Side chains-side chains (if present)
-pair_coeff 1 2 ${eps_pp} 1.0 2.5  # Backbone-side chains
-pair_coeff 3 3 ${eps_ss} 1.0 2.5  # Solvent-solvent
-pair_coeff 1 3 ${eps_sp} 1.0 2.5  # Backbone-solvent
-pair_coeff 2 3 ${eps_sp} 1.0 2.5  # Side chains-solvent
+pair_coeff 1 1 ${eps_pp} 1.0 2.5  # Polymer-polymer
 special_bonds fene
 
 
@@ -70,14 +66,10 @@ unfix 2
 #run 30000
 # half for equilibrium, half for measurement
 
-# Apply thermostat conditionally
+# Apply Langevin thermostat for production
 reset_timestep 0
-if "${thermostat} == langevin" then &
-  "fix 1 all langevin 1.0 1.0 1.0 ${random}" &
-  "fix 2 all nve" &
-
-if "${thermostat} == nosehoover" then &
- "fix 1 all nvt temp 1.0 1.0 0.1" &
+fix 1 all langevin 1.0 1.0 1.0 ${random}
+fix 2 all nve
 
 
 shell mkdir ${dump_path}/coord
@@ -91,7 +83,3 @@ dump_modify 2 flush yes pad 9
 run ${prun}
 
 write_data ${dump_path}/final_state.data nocoeff
-
-# Write polymer-only configuration (exclude solvent atoms, type 3)
-group polymer type 1 2
-write_data ${dump_path}/final_polymer.data nocoeff
